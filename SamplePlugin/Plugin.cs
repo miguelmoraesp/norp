@@ -1,10 +1,21 @@
-﻿using Dalamud.Game.Command;
+using Dalamud.Game.Command;
 using Dalamud.IoC;
 using Dalamud.Plugin;
+using ECommons;
 using System.IO;
 using Dalamud.Interface.Windowing;
 using Dalamud.Plugin.Services;
 using SamplePlugin.Windows;
+using FFXIVClientStructs.FFXIV.Client.Game.UI;
+using Lumina;
+using Microsoft.VisualBasic;
+using FFXIVClientStructs.FFXIV.Client.UI;
+using FFXIVClientStructs.FFXIV.Client.UI.Info;
+using System.Linq;
+using Dalamud.Game.ClientState.Objects.SubKinds;
+using ECommons.DalamudServices;
+using ECommons.GameFunctions;
+using Dalamud.Game.Network.Structures.InfoProxy;
 
 namespace SamplePlugin;
 
@@ -13,6 +24,10 @@ public sealed class Plugin : IDalamudPlugin
     [PluginService] internal static IDalamudPluginInterface PluginInterface { get; private set; } = null!;
     [PluginService] internal static ITextureProvider TextureProvider { get; private set; } = null!;
     [PluginService] internal static ICommandManager CommandManager { get; private set; } = null!;
+    [PluginService] internal static IPluginLog Logger { get; private set; } = null!;
+    [PluginService] internal static ICondition Condition { get; private set; } = null!;
+    [PluginService] internal static IObjectTable Table { get; private set; } = null!;
+   
 
     private const string CommandName = "/pmycommand";
 
@@ -24,6 +39,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public Plugin()
     {
+        ECommonsMain.Init(PluginInterface, this);
         Configuration = PluginInterface.GetPluginConfig() as Configuration ?? new Configuration();
 
         // you might normally want to embed resources and load them from the manifest stream
@@ -52,6 +68,7 @@ public sealed class Plugin : IDalamudPlugin
 
     public void Dispose()
     {
+        ECommonsMain.Dispose();
         WindowSystem.RemoveAllWindows();
 
         ConfigWindow.Dispose();
@@ -60,9 +77,10 @@ public sealed class Plugin : IDalamudPlugin
         CommandManager.RemoveHandler(CommandName);
     }
 
-    private void OnCommand(string command, string args)
+    private unsafe void OnCommand(string command, string args)
     {
-        // in response to the slash command, just toggle the display status of our main ui
+        var status = Svc.Objects.OfType<IPlayerCharacter>().Where(pc => pc.EntityId != 0xE000000 && pc.Character()->CharacterData.OnlineStatus is 25);
+        Logger.Info("bruh " + status.Any());
         ToggleMainUI();
     }
 
